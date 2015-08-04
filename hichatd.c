@@ -140,6 +140,8 @@ listen_task (void *arg)
         /* TODO */
     }
 
+    w_printerr ("$s: Listening on $s:$I\n", w_task_name (),
+                listener->bind ? listener->bind : "*", listener->port);
     int fd = socket (AF_INET, SOCK_STREAM, 0);
     if (fd < 0) w_die ("$s: Cannot create socket: $E\n", w_task_name ());
 
@@ -168,10 +170,17 @@ listen_task (void *arg)
             n = 1;
             setsockopt (new_fd, IPPROTO_TCP, TCP_NODELAY, (char*) &n, sizeof (int));
             w_io_t *client_io = w_io_unix_open_fd (new_fd);
-            w_task_prepare ((w_task_func_t) listener->conn,
-                            w_io_task_open (client_io),
-                            16384);
+            w_task_t *task = w_task_prepare ((w_task_func_t) listener->conn,
+                                             w_io_task_open (client_io),
+                                             16384);
             w_obj_unref (client_io);
+
+            w_buf_t namebuf = W_BUF;
+            const char *addr = (const char*) &sa.sin_addr;
+            w_buf_format (&namebuf, "$s<$i.$i.$i.$i>", w_task_name (),
+                          addr[0], addr[1], addr[2], addr[3]);
+            w_task_set_name (task, w_buf_str (&namebuf));
+            w_buf_clear (&namebuf);
         } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
             w_task_yield ();
         } else {
@@ -193,14 +202,14 @@ main (int argc, char **argv)
                              .port = 6689,
                              .conn = irc_worker,
                            }), 16384);
-    w_task_set_name (task, "listen:irc");
+    w_task_set_name (task, "IRC");
 
     task = w_task_prepare (listen_task,
                            &((Listener) {
                              .port = 5269,
                              .conn = xmpp_worker,
                            }), 16384);
-    w_task_set_name (task, "listen:xmpp");
+    w_task_set_name (task, "XMPP");
 
     w_task_run_scheduler ();
     return 0;
