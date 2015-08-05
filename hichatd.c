@@ -6,7 +6,6 @@
  */
 
 #include "wheel/wheel.h"
-#include "irc-parser/irc_parser.h"
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -14,110 +13,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
-
-
-#define IRC_ITEMS(F) \
-    F (nick)    \
-    F (name)    \
-    F (host)    \
-    F (command) \
-    F (param)
-
-#define DEFINE_IRC_STRUCT_ITEMS(_name) \
-    const char *_name; size_t _name ## _len;
-
-typedef struct {
-    IRC_ITEMS (DEFINE_IRC_STRUCT_ITEMS)
-} IRCLine;
-
-#undef DEFINE_IRC_STRUCT_ITEMS
-
-#define DEFINE_IRC_STRUCT_ITEM_SAVE_FUNC(_name)     \
-    static int on_irc_ ## _name (irc_parser *p,     \
-                                 const char *at,    \
-                                 size_t      len) { \
-        IRCLine *l = (IRCLine*) p->data;            \
-        l->_name = at;                              \
-        l->_name ## _len = len;                     \
-        return 0;                                   \
-    }
-
-IRC_ITEMS (DEFINE_IRC_STRUCT_ITEM_SAVE_FUNC)
-
-#undef DEFINE_IRC_STRUCT_ITEM_SAVE_FUNC
-
-static int
-on_irc_end (irc_parser *p, const char *at, size_t len)
-{
-    return 0;
-}
-
-static int
-on_irc_error (irc_parser *p, const char *at, size_t len)
-{
-    return 0;
-}
-
-
-static void
-irc_worker (w_io_t *socket)
-{
-    w_printerr ("$s: IRC client connected\n", w_task_name ());
-
-    /* The IRC protocol is line-based. */
-    w_buf_t line = W_BUF;
-    w_buf_t overflow = W_BUF;
-
-    irc_parser_settings parser_settings;
-    irc_parser_settings_init (&parser_settings,
-                              on_irc_nick,
-                              on_irc_name,
-                              on_irc_host,
-                              on_irc_command,
-                              on_irc_param,
-                              on_irc_end,
-                              on_irc_error);
-
-    irc_parser parser;
-    irc_parser_init (&parser, &parser_settings);
-    IRCLine irc_line;
-    parser.data = &irc_line;
-
-    for (;; w_buf_clear (&line)) {
-        w_io_result_t r = w_io_read_line (socket, &line, &overflow, 0);
-        if (w_io_failed (r)) {
-            w_printerr ("$s: Read error: $R\n", w_task_name (), r);
-            break;
-        } else if (w_io_eof (r)) {
-            w_printerr ("$s: Client disconnected\n", w_task_name ());
-            break;
-        } else if (w_buf_size (&line) == 0) {
-            continue;
-        }
-
-        /* Parse the input line. */
-        memset (&irc_line, 0x00, sizeof (IRCLine));
-        irc_parser_execute (&parser,
-                            w_buf_const_data (&line),
-                            w_buf_size (&line));
-        w_printerr ("$s: $S $S $S $S $S\n", w_task_name (),
-                    irc_line.nick_len,    irc_line.nick,
-                    irc_line.name_len,    irc_line.name,
-                    irc_line.host_len,    irc_line.host,
-                    irc_line.command_len, irc_line.command,
-                    irc_line.param_len,   irc_line.param);
-    }
-
-    W_IO_NORESULT (w_io_close (socket));
-}
-
-
-static void
-xmpp_worker (w_io_t *socket)
-{
-    w_printerr ("$s: XMPP client connected\n", w_task_name ());
-    W_IO_NORESULT (w_io_close (socket));
-}
 
 
 typedef struct {
@@ -192,6 +87,11 @@ listen_task (void *arg)
 }
 
 
+extern void proto_irc_worker    (w_io_t *socket);
+extern void proto_xmpp_worker   (w_io_t *socket);
+extern void proto_hichat_worker (w_io_t *socket);
+
+
 int
 main (int argc, char **argv)
 {
@@ -200,16 +100,23 @@ main (int argc, char **argv)
     task = w_task_prepare (listen_task,
                            &((Listener) {
                              .port = 6689,
-                             .conn = irc_worker,
+                             .conn = proto_irc_worker,
                            }), 16384);
     w_task_set_name (task, "IRC");
 
     task = w_task_prepare (listen_task,
                            &((Listener) {
                              .port = 5269,
-                             .conn = xmpp_worker,
+                             .conn = proto_xmpp_worker,
                            }), 16384);
     w_task_set_name (task, "XMPP");
+
+    task = w_task_prepare (listen_task,
+                           &((Listener) {
+                             .port = 12421,
+                             .conn = proto_hichat_worker,
+                           }), 16384);
+    w_task_set_name (task, "HC");
 
     w_task_run_scheduler ();
     return 0;

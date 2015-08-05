@@ -1,6 +1,3 @@
 [submodule "wheel"]
 	path = wheel
 	url = git://github.com/aperezdc/wheel
-[submodule "irc-parser"]
-	path = irc-parser
-	url = git://github.com/JosephMoniz/irc-parser

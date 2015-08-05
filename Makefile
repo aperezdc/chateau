@@ -8,7 +8,9 @@ all: hichatd
 libwheel_PATH := wheel
 include wheel/Makefile.libwheel
 
-hichatd_SRCS := hichatd.c irc-parser/irc_parser.c
+hichatd_SRCS := hichatd.c proto-hichat.c \
+                proto-xmpp.c \
+                proto-irc.c proto-irc-parse.c
 hichatd_OBJS := $(patsubst %.c,%.o,${hichatd_SRCS})
 
 hichatd: ${hichatd_OBJS} ${libwheel}
