@@ -25,14 +25,17 @@ proto_irc_worker (w_io_t *socket)
                     "user   : $B\n"
                     "host   : $B\n"
                     "command: $B ($s)\n"
-                    "params : $B\n"
-                    "-----\n",
+                    "params : $B ($I)\n",
                     &message.prefix.nick,
                     &message.prefix.user,
                     &message.prefix.host,
                     &message.cmd_text,
                     irc_cmd_name (message.cmd),
-                    &message.params_text);
+                    &message.params_text,
+                    (unsigned) message.n_params);
+        for (uint8_t i = 0; i < message.n_params; i++)
+            w_printerr ("  $I: $B¬\n", (unsigned) i, &message.params[i]);
+        w_printerr ("-----\n");
     }
 
     W_IO_NORESULT (w_io_close (socket));

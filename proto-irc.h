@@ -293,6 +293,7 @@ typedef struct {
     w_buf_t         cmd_text;
     irc_cmd_t       cmd;
 
+    uint8_t         n_params;
     w_buf_t         params_text;
     w_buf_t         params[IRC_MAX_PARAMS];
 } irc_message_t;

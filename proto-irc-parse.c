@@ -434,6 +434,46 @@ read_command_rest:
 }
 
 
+static inline void
+parse_param (P, S)
+{
+    if (p->msg->n_params >= IRC_MAX_PARAMS) {
+        p->error = "Too many parameters";
+        *status = kStatusError;
+        return;
+    }
+
+    if (w_buf_size (&p->msg->params_text) > 0) {
+        w_buf_append_char (&p->msg->params_text, ' ');
+    }
+
+    size_t start_pos = w_buf_size (&p->msg->params_text);
+
+    if (p->look == COLON) {
+        w_buf_append_char (&p->msg->params_text, COLON);
+        start_pos++;
+        /* Read parameter until the end of the line. */
+        nextchar (p, CHECK_OK);
+        while (p->look != CRLF) {
+            w_buf_append_char (&p->msg->params_text, p->look);
+            nextchar (p, CHECK_OK);
+        }
+    } else {
+        /* Read parameter until space or end of line. */
+        while (p->look != SPACE && p->look != CRLF) {
+            w_buf_append_char (&p->msg->params_text, p->look);
+            nextchar (p, CHECK_OK);
+        }
+    }
+
+    /* Arrange for params[n] to point to the data at params_text */
+    p->msg->params[p->msg->n_params++] = (w_buf_t) {
+        .data = w_buf_data (&p->msg->params_text) + start_pos,
+        .size = w_buf_size (&p->msg->params_text) - start_pos,
+    };
+}
+
+
 /*
  * <message> ::= [':' <prefix> <SPACE> ] <command> <params> <crlf>
  */
@@ -449,12 +489,9 @@ parse_message (P, S)
 
     parse_command (p, CHECK_OK);
 
-    if (p->look == SPACE) {
+    while (p->look == SPACE) {
         skipspace (p, CHECK_OK);
-        while (p->look != CRLF) {
-            w_buf_append_char (&p->msg->params_text, p->look);
-            nextchar (p, CHECK_OK);
-        }
+        parse_param (p, CHECK_OK);
     }
 
     if (p->look != CRLF && *status != kStatusEof) {
