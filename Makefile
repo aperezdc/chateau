@@ -3,25 +3,25 @@
 # Adrian Perez, 2015-08-04 01:05
 #
 
-all: hichatd
+all: chateaud
 
 libwheel_PATH := wheel
 include wheel/Makefile.libwheel
 
-hichatd_SRCS := hichatd.c proto-hichat.c \
-                proto-xmpp.c \
-                proto-irc.c proto-irc-parse.c
-hichatd_OBJS := $(patsubst %.c,%.o,${hichatd_SRCS})
+chateaud_SRCS := chateaud.c \
+                 proto-xmpp.c \
+                 proto-irc.c proto-irc-parse.c
+chateaud_OBJS := $(patsubst %.c,%.o,${chateaud_SRCS})
 
-hichatd: ${hichatd_OBJS} ${libwheel}
-hichatd: CFLAGS += -O0 -g
+chateaud: ${chateaud_OBJS} ${libwheel}
+chateaud: CFLAGS += -O0 -g
 
-clean: clean-hichatd
+clean: clean-chateaud
 
-clean-hichatd:
-	${RM} hichatd ${hichatd_OBJS}
+clean-chateaud:
+	${RM} chateaud ${chateaud_OBJS}
 
-.PHONY: clean-hichatd
+.PHONY: clean-chateaud
 
 # vim:ft=make
 #

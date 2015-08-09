@@ -1,5 +1,5 @@
 /*
- * hichatd.c
+ * chateaud.c
  * Copyright (C) 2015 Adrian Perez <aperez@igalia.com>
  *
  * Distributed under terms of the MIT license.
@@ -87,9 +87,8 @@ listen_task (void *arg)
 }
 
 
-extern void proto_irc_worker    (w_io_t *socket);
-extern void proto_xmpp_worker   (w_io_t *socket);
-extern void proto_hichat_worker (w_io_t *socket);
+extern void proto_irc_worker  (w_io_t *socket);
+extern void proto_xmpp_worker (w_io_t *socket);
 
 
 int
@@ -110,13 +109,6 @@ main (int argc, char **argv)
                              .conn = proto_xmpp_worker,
                            }), 16384);
     w_task_set_name (task, "XMPP");
-
-    task = w_task_prepare (listen_task,
-                           &((Listener) {
-                             .port = 12421,
-                             .conn = proto_hichat_worker,
-                           }), 16384);
-    w_task_set_name (task, "HC");
 
     w_task_run_scheduler ();
     return 0;
