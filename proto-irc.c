@@ -24,13 +24,14 @@ proto_irc_worker (w_io_t *socket)
         w_printerr ("origin : $B\n"
                     "user   : $B\n"
                     "host   : $B\n"
-                    "command: $B\n"
+                    "command: $B ($s)\n"
                     "params : $B\n"
                     "-----\n",
                     &message.prefix.nick,
                     &message.prefix.user,
                     &message.prefix.host,
                     &message.cmd_text,
+                    irc_cmd_name (message.cmd),
                     &message.params_text);
     }
 

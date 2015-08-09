@@ -259,6 +259,22 @@ irc_rpl_info (irc_rpl_t code, uint8_t *narg, const char **name, const char **fmt
 }
 
 
+static inline const char*
+irc_cmd_name (irc_cmd_t cmd)
+{
+    switch (cmd) {
+#define IRC_CMD_SWITCH_ITEM(_name) \
+        case IRC_CMD_ ## _name: return "IRC_CMD_" #_name;
+
+        IRC_ALL_CMDS (IRC_CMD_SWITCH_ITEM)
+
+#undef IRC_CMD_SWITCH_ITEM
+        default:
+            return NULL;
+    }
+}
+
+
 enum {
     IRC_MAX_PARAMS = 15,
 };
