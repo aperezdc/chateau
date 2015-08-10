@@ -10,67 +10,75 @@
 
 #include "wheel/wheel.h"
 
+/*
+ * Standard RFC1459 IRC commands are listed in the form (N, M, NAME), where:
+ *   - N is the number of mandatory parameters.
+ *   - M is the number of optional parameters, when positive. A negative value
+ *     indicates a variable amount of paramters up to IRC_MAX_PARAMS.
+ *   - NAME is the name of the command.
+ * The total maximum amount of allowed parameters is for a command is: N+M.
+ */
 
 /* 4.1 Connection registration */
 #define IRC_CONNREG_CMDS(F) \
-    F (PASS)   \
-    F (NICK)   \
-    F (USER)   \
-    F (SERVER) \
-    F (OPER)   \
-    F (QUIT)   \
-    F (SQUIT)
+    F (1, 0, PASS)   \
+    F (1, 1, NICK)   \
+    F (4, 0, USER)   \
+    F (3, 0, SERVER) \
+    F (2, 0, OPER)   \
+    F (0, 1, QUIT)   \
+    F (2, 0, SQUIT)
 
 /* 4.2 Channel operations */
 #define IRC_CHANOPS_CMDS(F) \
-    F (JOIN)   \
-    F (PART)   \
-    F (MODE)   \
-    F (TOPIC)  \
-    F (NAMES)  \
-    F (LIST)   \
-    F (INVITE) \
-    F (KICK)
+    F (1, 1, JOIN)   \
+    F (1, 0, PART)   \
+    F (2, 3, MODE)   \
+    F (1, 1, TOPIC)  \
+    F (0, 1, NAMES)  \
+    F (0, 2, LIST)   \
+    F (2, 0, INVITE) \
+    F (2, 1, KICK)
 
 /* 4.3 Server queries and commands */
 #define IRC_SRVQUERY_CMDS(F) \
-    F (VERSION) \
-    F (STATS)   \
-    F (LINKS)   \
-    F (TIME)    \
-    F (CONNECT) \
-    F (TRACE)   \
-    F (ADMIN)   \
-    F (INFO)
+    F (0, 1, VERSION) \
+    F (0, 2, STATS)   \
+    F (0, 2, LINKS)   \
+    F (0, 1, TIME)    \
+    F (1, 2, CONNECT) \
+    F (0, 1, TRACE)   \
+    F (0, 1, ADMIN)   \
+    F (0, 1, INFO)
 
 /* 4.4 Sending messages */
 #define IRC_MSGSEND_CMDS(F) \
-    F (PRIVMSG) \
-    F (NOTICE)
+    F (2, 0, PRIVMSG) \
+    F (2, 0, NOTICE)
 
 /* 4.5 User-based queries */
 #define IRC_USRQUERY_CMDS(F) \
-    F (WHO)   \
-    F (WHOIS) \
-    F (WHOWAS)
+    F (0, 2, WHO)   \
+    F (1, 1, WHOIS) \
+    F (1, 2, WHOWAS)
 
 /* 4.6 Miscellaneous messages */
 #define IRC_MISC_CMDS(F) \
-    F (KILL) \
-    F (PING) \
-    F (PONG) \
-    F (ERROR)
+    F (2, 0, KILL) \
+    F (1, 1, PING) \
+    F (1, 1, PONG) \
+    F (1, 0, ERROR)
 
 /* 5 Optionals */
 #define IRC_OPTIONAL_CMDS(F) \
-    F (AWAY)     \
-    F (REHASH)   \
-    F (RESTART)  \
-    F (SUMMON)   \
-    F (USERS)    \
-    F (WALLOPS)  \
-    F (USERHOST) \
-    F (ISON)
+    F (0, 1, AWAY)     \
+    F (0, 0, REHASH)   \
+    F (0, 0, RESTART)  \
+    F (1, 1, SUMMON)   \
+    F (0, 1, USERS)    \
+    F (1, 0, WALLOPS)  \
+    F (1,-1, USERHOST) \
+    F (1,-1, ISON)
 
 #define IRC_MANDATORY_CMDS(F) \
     IRC_CONNREG_CMDS  (F) \
@@ -216,7 +224,7 @@
 typedef enum {
     IRC_CMD_UNKNOWN = 0,
 
-#define IRC_CMD_ENUM_ITEM(name) \
+#define IRC_CMD_ENUM_ITEM(nparam, noptparam, name) \
     IRC_CMD_ ## name,
 
     IRC_ALL_CMDS (IRC_CMD_ENUM_ITEM)
@@ -263,7 +271,7 @@ static inline const char*
 irc_cmd_name (irc_cmd_t cmd)
 {
     switch (cmd) {
-#define IRC_CMD_SWITCH_ITEM(_name) \
+#define IRC_CMD_SWITCH_ITEM(nparam, noptparam, _name) \
         case IRC_CMD_ ## _name: return "IRC_CMD_" #_name;
 
         IRC_ALL_CMDS (IRC_CMD_SWITCH_ITEM)
@@ -271,6 +279,25 @@ irc_cmd_name (irc_cmd_t cmd)
 #undef IRC_CMD_SWITCH_ITEM
         default:
             return NULL;
+    }
+}
+
+
+static inline const char*
+irc_cmd_info (irc_cmd_t cmd,
+              int8_t   *nparam,
+              int8_t   *noptparam)
+{
+    switch (cmd) {
+#define IRC_CMD_SWITCH_ITEM(_nparam, _noptparam, _name) \
+        case IRC_CMD_ ## _name: \
+            if (nparam) *nparam = (_nparam); \
+            if (noptparam) *noptparam = (_noptparam); \
+            return "IRC_CMD_" #_name;
+
+        IRC_ALL_CMDS (IRC_CMD_SWITCH_ITEM)
+
+#undef IRC_CMD_SWITCH_ITEM
     }
 }
 
