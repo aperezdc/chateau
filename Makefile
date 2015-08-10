@@ -10,7 +10,9 @@ include wheel/Makefile.libwheel
 
 chateaud_SRCS := chateaud.c \
                  proto-xmpp.c \
-                 proto-irc.c proto-irc-parse.c
+                 proto-irc.c proto-irc-parse.c \
+                 auth-simple-mem.c \
+                 auth-pam.c
 chateaud_OBJS := $(patsubst %.c,%.o,${chateaud_SRCS})
 
 chateaud: ${chateaud_OBJS} ${libwheel}

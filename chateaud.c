@@ -5,7 +5,7 @@
  * Distributed under terms of the MIT license.
  */
 
-#include "wheel/wheel.h"
+#include "auth.h"
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -91,9 +91,20 @@ extern void proto_irc_worker  (w_io_t *socket);
 extern void proto_xmpp_worker (w_io_t *socket);
 
 
+static const auth_simple_mem_agent_entry_t auth_users[] = {
+    { "op",  "op3rat0r" },
+    { "joe", "jo3jo3"   },
+    { "tom", "t0mt0m"   },
+    { NULL },
+};
+auth_agent_t *auth_agent = NULL;
+
+
 int
 main (int argc, char **argv)
 {
+    auth_agent = auth_simple_mem_agent_new (auth_users);
+
     w_task_t *task;
 
     task = w_task_prepare (listen_task,
@@ -111,6 +122,8 @@ main (int argc, char **argv)
     w_task_set_name (task, "XMPP");
 
     w_task_run_scheduler ();
+
+    w_obj_unref (auth_agent);
     return 0;
 }
 
