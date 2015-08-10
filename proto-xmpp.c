@@ -9,7 +9,7 @@
 
 
 void
-proto_xmpp_worker (w_io_t *socket)
+proto_xmpp_handler (w_task_listener_t *listener, w_io_t *socket)
 {
     w_printerr ("$s: Client connected\n", w_task_name ());
     W_IO_NORESULT (w_io_close (socket));

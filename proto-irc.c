@@ -8,11 +8,11 @@
 #include "proto-irc.h"
 
 void
-proto_irc_worker (w_io_t *socket)
+proto_irc_handler (w_task_listener_t *listener, w_io_t *socket)
 {
     w_printerr ("$s: Client connected\n", w_task_name ());
 
-    /* The IRC protocol is line-based. */
+    auth_agent_t *auth_agent = listener->userdata;
     irc_message_t message = { 0, };
 
     for (;; irc_message_reset (&message)) {
